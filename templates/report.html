@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ ticker }} — Say vs. Do</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 40px; display: flex; align-items: center; gap: 16px; }
+header a { color: #8b949e; text-decoration: none; }
+header a:hover { color: #e6edf3; }
+header h1 { font-size: 1.3rem; }
+.container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+.hero { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 32px; margin-bottom: 28px; display: flex; gap: 40px; align-items: center; }
+.hero-left .company { font-size: 0.9rem; color: #8b949e; margin-bottom: 6px; }
+.hero-left .ticker { font-size: 2.2rem; font-weight: 800; }
+.hero-left .quarter { color: #8b949e; font-size: 0.85rem; margin-top: 4px; }
+.score-circle { text-align: center; min-width: 120px; }
+.score-num { font-size: 3.5rem; font-weight: 900; line-height: 1; }
+.score-num.high { color: #3fb950; }
+.score-num.mid { color: #d29922; }
+.score-num.low { color: #f85149; }
+.score-label { font-size: 0.75rem; color: #8b949e; margin-top: 4px; }
+.verdict { font-size: 0.95rem; margin-top: 6px; }
+.action-btn { padding: 10px 20px; background: #238636; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+.action-btn:hover { background: #2ea043; }
+.action-btn:disabled { background: #30363d; cursor: wait; }
+.dimensions { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 28px; }
+@media (max-width: 600px) { .dimensions { grid-template-columns: 1fr; } }
+.dim-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+.dim-card h3 { font-size: 0.85rem; color: #8b949e; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+.dim-score { font-size: 1.8rem; font-weight: 800; }
+.dim-score.high { color: #3fb950; }
+.dim-score.mid { color: #d29922; }
+.dim-score.low { color: #f85149; }
+.dim-bar { height: 5px; background: #30363d; border-radius: 3px; margin: 8px 0 12px; }
+.dim-bar-fill { height: 100%; border-radius: 3px; }
+.dim-bar-fill.high { background: #3fb950; }
+.dim-bar-fill.mid { background: #d29922; }
+.dim-bar-fill.low { background: #f85149; }
+.dim-summary { font-size: 0.82rem; color: #8b949e; line-height: 1.5; }
+.dim-flags { margin-top: 8px; }
+.flag { font-size: 0.78rem; color: #d29922; margin: 3px 0; }
+.evidence { font-size: 0.78rem; color: #58a6ff; font-style: italic; margin-top: 6px; border-left: 2px solid #30363d; padding-left: 8px; }
+.no-result { text-align: center; padding: 60px; color: #8b949e; }
+.history-section { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 24px; }
+.history-section h2 { font-size: 1rem; margin-bottom: 16px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th { color: #8b949e; text-align: left; padding: 8px; border-bottom: 1px solid #30363d; }
+td { padding: 8px; border-bottom: 1px solid #21262d; }
+</style>
+</head>
+<body>
+<header>
+  <a href="/">← Say vs. Do</a>
+  <h1>{{ ticker }} Scorecard</h1>
+</header>
+<div class="container">
+
+{% if result %}
+{% set s = result.composite_score %}
+{% set cls = 'high' if s >= 70 else ('mid' if s >= 45 else 'low') %}
+<div class="hero">
+  <div class="hero-left" style="flex:1">
+    <div class="company">{{ result.company }}</div>
+    <div class="ticker">{{ ticker }}</div>
+    <div class="quarter">{{ result.quarter }}</div>
+    <div class="verdict" style="margin-top: 12px">{{ result.verdict }}</div>
+  </div>
+  <div class="score-circle">
+    <div class="score-num {{ cls }}">{{ s }}</div>
+    <div class="score-label">Narrative vs. Reality</div>
+  </div>
+  <div>
+    <button class="action-btn" onclick="rescore()">Re-Score →</button>
+  </div>
+</div>
+
+<div class="dimensions">
+{% set dim_info = [
+  ('ai_narrative', 'AI Narrative (25%)', result.dimensions.ai_narrative),
+  ('guidance_accuracy', 'Guidance Accuracy (25%)', result.dimensions.guidance_accuracy),
+  ('risk_drift', 'Risk Drift (20%)', result.dimensions.risk_drift),
+  ('capital_honesty', 'Capital Honesty (15%)', result.dimensions.capital_honesty),
+  ('esg_substance', 'ESG Substance (15%)', result.dimensions.esg_substance),
+] %}
+{% for key, label, dim in dim_info %}
+{% if dim %}
+{% set ds = dim.score %}
+{% set dcls = 'high' if ds >= 70 else ('mid' if ds >= 45 else 'low') %}
+<div class="dim-card">
+  <h3>{{ label }}</h3>
+  <div class="dim-score {{ dcls }}">{{ ds }}</div>
+  <div class="dim-bar"><div class="dim-bar-fill {{ dcls }}" style="width: {{ ds }}%"></div></div>
+  <div class="dim-summary">{{ dim.summary }}</div>
+  <div class="dim-flags">
+    {% for flag in dim.flags[:2] %}<div class="flag">⚠ {{ flag }}</div>{% endfor %}
+  </div>
+  {% if dim.evidence %}
+  <div class="evidence">"{{ dim.evidence[0][:200] }}"</div>
+  {% endif %}
+</div>
+{% endif %}
+{% endfor %}
+</div>
+
+{% else %}
+<div class="no-result">
+  <p style="font-size: 1.1rem; margin-bottom: 20px">No score found for <strong>{{ ticker }}</strong></p>
+  <button class="action-btn" onclick="rescore()">Score {{ ticker }} Now →</button>
+</div>
+{% endif %}
+
+{% if history %}
+<div class="history-section">
+  <h2>Score History</h2>
+  <table>
+    <thead>
+      <tr><th>Quarter</th><th>Composite</th><th>AI</th><th>Guidance</th><th>Risk</th><th>Capital</th><th>ESG</th><th>Scanned</th></tr>
+    </thead>
+    <tbody>
+      {% for row in history %}
+      <tr>
+        <td>{{ row.quarter }}</td>
+        <td><strong>{{ row.composite_score }}</strong></td>
+        <td>{{ row.ai_score or '—' }}</td>
+        <td>{{ row.guidance_score or '—' }}</td>
+        <td>{{ row.risk_drift_score or '—' }}</td>
+        <td>{{ row.capital_score or '—' }}</td>
+        <td>{{ row.esg_score or '—' }}</td>
+        <td style="color: #8b949e; font-size: 0.8rem">{{ row.scanned_at[:10] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+</div>
+<script>
+async function rescore() {
+  const btn = document.querySelector('.action-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Scoring...'; }
+  const resp = await fetch('/score/{{ ticker }}', { method: 'POST' });
+  if (resp.ok) window.location.reload();
+  else { alert('Scoring failed'); if (btn) { btn.disabled = false; btn.textContent = 'Re-Score →'; } }
+}
+</script>
+</body>
+</html>

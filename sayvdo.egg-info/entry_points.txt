@@ -1,0 +1,2 @@
+[console_scripts]
+sayvdo = sayvdo.cli:main

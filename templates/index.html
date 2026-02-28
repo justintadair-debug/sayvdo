@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Say vs. Do — Corporate Truthfulness Engine</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+header { background: #161b22; border-bottom: 1px solid #30363d; padding: 20px 40px; display: flex; align-items: center; gap: 16px; }
+header h1 { font-size: 1.6rem; font-weight: 700; }
+header span { color: #8b949e; font-size: 0.9rem; }
+.container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+.search-box { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 30px; margin-bottom: 40px; }
+.search-box h2 { margin-bottom: 16px; font-size: 1.1rem; color: #8b949e; }
+.search-row { display: flex; gap: 12px; }
+.search-row input { flex: 1; padding: 12px 16px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; font-size: 1rem; outline: none; }
+.search-row input:focus { border-color: #388bfd; }
+.search-row button { padding: 12px 24px; background: #238636; border: none; border-radius: 8px; color: #fff; font-size: 1rem; cursor: pointer; font-weight: 600; }
+.search-row button:hover { background: #2ea043; }
+.leaderboard h2 { font-size: 1.2rem; margin-bottom: 20px; color: #8b949e; }
+.ticker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+.ticker-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; text-decoration: none; color: inherit; display: block; transition: border-color 0.2s; }
+.ticker-card:hover { border-color: #388bfd; }
+.ticker-card .ticker-sym { font-size: 1.3rem; font-weight: 700; }
+.ticker-card .company { font-size: 0.8rem; color: #8b949e; margin: 4px 0 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.score-big { font-size: 2rem; font-weight: 800; }
+.score-big.high { color: #3fb950; }
+.score-big.mid { color: #d29922; }
+.score-big.low { color: #f85149; }
+.score-label { font-size: 0.75rem; color: #8b949e; }
+.bar { height: 6px; background: #30363d; border-radius: 3px; margin-top: 10px; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bar-fill.high { background: #3fb950; }
+.bar-fill.mid { background: #d29922; }
+.bar-fill.low { background: #f85149; }
+.empty { text-align: center; padding: 60px; color: #8b949e; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Say vs. Do</h1>
+  <span>Corporate Truthfulness Engine</span>
+</header>
+<div class="container">
+  <div class="search-box">
+    <h2>Score a company</h2>
+    <div class="search-row">
+      <input type="text" id="ticker-input" placeholder="Enter ticker symbol (e.g. MSFT)" onkeydown="if(event.key==='Enter') goScore()">
+      <button onclick="goScore()">Analyze →</button>
+    </div>
+  </div>
+
+  <div class="leaderboard">
+    <h2>Recent Scores</h2>
+    {% if recent %}
+    <div class="ticker-grid">
+      {% for row in recent %}
+      {% set s = row.composite_score %}
+      {% set cls = 'high' if s >= 70 else ('mid' if s >= 45 else 'low') %}
+      <a class="ticker-card" href="/score/{{ row.ticker }}">
+        <div class="ticker-sym">{{ row.ticker }}</div>
+        <div class="company">{{ row.company or row.ticker }}</div>
+        <div class="score-big {{ cls }}">{{ s }}</div>
+        <div class="score-label">Narrative vs. Reality</div>
+        <div class="bar"><div class="bar-fill {{ cls }}" style="width: {{ s }}%"></div></div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty">
+      No companies scored yet. Enter a ticker above to start.
+    </div>
+    {% endif %}
+  </div>
+</div>
+<script>
+function goScore() {
+  const t = document.getElementById('ticker-input').value.trim().toUpperCase();
+  if (t) window.location.href = '/score/' + t;
+}
+</script>
+</body>
+</html>
